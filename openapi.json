@@ -1,0 +1,112 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Urja Meter Ops API Wrapper",
+    "version": "1.0.0",
+    "description": "Read-only, on-demand JSON API in front of the Urja Meter Ops portal. Portal credentials remain server-side."
+  },
+  "servers": [{ "url": "http://localhost:3000" }],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Service liveness",
+        "responses": { "200": { "$ref": "#/components/responses/Health" } }
+      }
+    },
+    "/api/v1/meters": {
+      "get": {
+        "summary": "List smart meters",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Status" },
+          { "$ref": "#/components/parameters/Search" }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/MeterList" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "502": { "$ref": "#/components/responses/PortalError" }
+        }
+      }
+    },
+    "/api/v1/meters/{id}": {
+      "get": {
+        "summary": "Get meter detail",
+        "parameters": [{ "$ref": "#/components/parameters/MeterId" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/MeterDetail" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "502": { "$ref": "#/components/responses/PortalError" }
+        }
+      }
+    },
+    "/api/v1/meters/{id}/consumption": {
+      "get": {
+        "summary": "Get meter consumption history",
+        "parameters": [
+          { "$ref": "#/components/parameters/MeterId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/From" },
+          { "$ref": "#/components/parameters/To" }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Consumption" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "502": { "$ref": "#/components/responses/PortalError" }
+        }
+      }
+    },
+    "/api/v1/hierarchy": {
+      "get": {
+        "summary": "Get network hierarchy",
+        "responses": {
+          "200": { "$ref": "#/components/responses/Hierarchy" },
+          "502": { "$ref": "#/components/responses/PortalError" }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Trigger internal portal login",
+        "responses": {
+          "200": { "description": "Portal session established", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } } } },
+          "503": { "$ref": "#/components/responses/PortalError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "MeterId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+      "Page": { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+      "Limit": { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000 } },
+      "Status": { "name": "status", "in": "query", "schema": { "type": "string" } },
+      "Search": { "name": "search", "in": "query", "schema": { "type": "string" } },
+      "From": { "name": "from", "in": "query", "schema": { "type": "string" } },
+      "To": { "name": "to", "in": "query", "schema": { "type": "string" } }
+    },
+    "schemas": {
+      "Meter": {
+        "type": "object",
+        "required": ["meterId", "serialNumber", "name", "status", "installedAt", "location"],
+        "properties": {
+          "meterId": { "type": "string" }, "serialNumber": { "type": ["string", "null"] }, "name": { "type": ["string", "null"] }, "status": { "type": ["string", "null"] }, "installedAt": { "type": ["string", "null"] }, "location": { "type": ["object", "null"] }
+        }
+      },
+      "ConsumptionRecord": { "type": "object", "required": ["meterId", "period", "unitsConsumed"], "properties": { "meterId": { "type": "string" }, "period": { "type": "string" }, "unitsConsumed": { "type": "number" } } },
+      "Error": { "type": "object", "required": ["error", "message"], "properties": { "error": { "type": "string" }, "message": { "type": "string" }, "detail": {} } },
+      "LoginResponse": { "type": "object", "properties": { "data": { "type": "object", "properties": { "authenticated": { "type": "boolean" } } } } }
+    },
+    "responses": {
+      "Health": { "description": "Service is alive", "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" }, "service": { "type": "string" } } } } } },
+      "MeterList": { "description": "Meter list", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Meter" } }, "meta": { "type": "object" } } } } } },
+      "MeterDetail": { "description": "Meter detail", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Meter" } } } } } },
+      "Consumption": { "description": "Consumption history", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/ConsumptionRecord" } }, "meta": { "type": "object" } } } } } },
+      "Hierarchy": { "description": "Network hierarchy", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array" } } } } } },
+      "ValidationError": { "description": "Invalid request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "PortalError": { "description": "Upstream portal failure", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "NotFound": { "description": "Meter not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    }
+  }
+}
