@@ -5,7 +5,11 @@
     "version": "1.0.0",
     "description": "Read-only, on-demand JSON API in front of the Urja Meter Ops portal. Portal credentials remain server-side."
   },
-  "servers": [{ "url": "http://localhost:3000" }],
+  "servers": [
+    {
+      "url": "https://flock-energy-api-2r6q.onrender.com"
+    }
+  ],  
   "paths": {
     "/health": {
       "get": {
